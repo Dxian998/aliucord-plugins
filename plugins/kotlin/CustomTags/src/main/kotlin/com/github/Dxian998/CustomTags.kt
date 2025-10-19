@@ -1,8 +1,3 @@
-/*
- * CustomTags - Aliucord Plugin
- * Create custom slash commands with pre-made messages
- */
-
 package com.github.Dxian998.plugins
 
 import android.content.Context
