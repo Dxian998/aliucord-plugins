@@ -11,7 +11,7 @@ on:
     paths:
       - 'gradle.properties'
       - 'gradle/**'
-      - 'plugin/**'
+      - 'plugins/**'
       - '**.gradle.kts'
       - '.github/**'
 
