@@ -1,21 +1,12 @@
 package com.github.Dxian998.plugins
 
 import android.content.Context
-import android.view.View
-import android.widget.LinearLayout
-import android.widget.TextView
 import com.aliucord.Utils
 import com.aliucord.annotations.AliucordPlugin
 import com.aliucord.api.CommandsAPI
-import com.aliucord.api.SettingsAPI
 import com.aliucord.entities.Plugin
-import com.aliucord.fragments.SettingsPage
-import com.aliucord.views.Button
-import com.aliucord.views.TextInput
 import com.discord.api.commands.ApplicationCommandType
-import com.lytefast.flexinput.R
 
-@Suppress("unused")
 @AliucordPlugin
 class CustomTags : Plugin() {
     private val tagsKey = "customTags"
@@ -38,10 +29,10 @@ class CustomTags : Plugin() {
                     "Action to perform (add, remove, list)",
                     null,
                     true,
-                    listOf(
-                        Utils.createCommandChoice("add", "add"),
-                        Utils.createCommandChoice("remove", "remove"),
-                        Utils.createCommandChoice("list", "list")
+                    choices = Utils.createCommandChoices(
+                        "add" to "add",
+                        "remove" to "remove",
+                        "list" to "list"
                     )
                 ),
                 Utils.createCommandOption(
@@ -142,71 +133,5 @@ class CustomTags : Plugin() {
 
     override fun stop(context: Context) {
         commands.unregisterAll()
-    }
-
-    override fun getSettingsPage(context: Context, page: String?): SettingsPage {
-        return SettingsPage("Custom Tags").apply {
-            setActionBarTitle("Custom Tags")
-            
-            addView(TextView(context, null, 0, R.i.UiKit_Settings_Item_Header).apply {
-                text = "How to Use"
-            })
-            
-            addView(TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                text = """
-                    • Use /tag add <name> <message> to create a new tag
-                    • Use /tag remove <name> to delete a tag
-                    • Use /tag list to see all your tags
-                    • Use /<name> to send your custom tag message
-                    
-                    Example: /tag add hello Hello everyone! How are you doing today?
-                    Then use: /hello to send the message
-                """.trimIndent()
-            })
-            
-            addView(TextView(context, null, 0, R.i.UiKit_Settings_Item_Header).apply {
-                text = "Your Tags"
-            })
-            
-            val tags = getTags()
-            if (tags.isEmpty()) {
-                addView(TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                    text = "No tags created yet. Use /tag add to create one!"
-                })
-            } else {
-                tags.forEach { (name, message) ->
-                    addView(LinearLayout(context).apply {
-                        orientation = LinearLayout.VERTICAL
-                        setPadding(
-                            Utils.dpToPx(16),
-                            Utils.dpToPx(8),
-                            Utils.dpToPx(16),
-                            Utils.dpToPx(8)
-                        )
-                        
-                        addView(TextView(context, null, 0, R.i.UiKit_Settings_Item_Label).apply {
-                            text = "/$name"
-                        })
-                        
-                        addView(TextView(context, null, 0, R.i.UiKit_Settings_Item_SubText).apply {
-                            text = message
-                        })
-                        
-                        addView(Button(context).apply {
-                            text = "Delete"
-                            setOnClickListener {
-                                val updatedTags = getTags().toMutableMap()
-                                updatedTags.remove(name)
-                                saveTags(updatedTags)
-                                commands.unregisterCommand(name)
-                                
-                                Utils.showToast("Tag deleted! Restart required to see changes in settings.")
-                                reRender()
-                            }
-                        })
-                    })
-                }
-            }
-        }
     }
 }
