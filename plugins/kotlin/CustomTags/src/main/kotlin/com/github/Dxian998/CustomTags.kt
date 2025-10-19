@@ -1,10 +1,16 @@
+/*
+ * CustomTags - Aliucord Plugin
+ * Create custom slash commands with pre-made messages
+ */
+
 package com.github.Dxian998.plugins
 
 import android.content.Context
-import com.aliucord.Utils
 import com.aliucord.annotations.AliucordPlugin
-import com.aliucord.api.CommandsAPI
 import com.aliucord.entities.Plugin
+import com.aliucord.entities.CommandContext
+import com.aliucord.api.CommandsAPI
+import com.aliucord.Utils
 import com.discord.api.commands.ApplicationCommandType
 
 @AliucordPlugin
@@ -21,35 +27,34 @@ class CustomTags : Plugin() {
         // Register the main management command
         commands.registerCommand(
             "tag",
-            "Manage custom tags (create, delete, list)",
+            "Manage custom tags",
             listOf(
                 Utils.createCommandOption(
                     ApplicationCommandType.STRING,
                     "action",
-                    "Action to perform (add, remove, list)",
+                    "Action: add, remove, or list",
                     null,
-                    true,
-                    choices = Utils.createCommandChoices(
-                        "add" to "add",
-                        "remove" to "remove",
-                        "list" to "list"
-                    )
+                    true
                 ),
                 Utils.createCommandOption(
                     ApplicationCommandType.STRING,
                     "name",
-                    "Tag name"
+                    "Tag name",
+                    null,
+                    false
                 ),
                 Utils.createCommandOption(
                     ApplicationCommandType.STRING,
                     "message",
-                    "Tag message"
+                    "Tag message",
+                    null,
+                    false
                 )
             )
-        ) { ctx ->
+        ) { ctx: CommandContext ->
             val action = ctx.getRequiredString("action")
             
-            when (action) {
+            when (action.lowercase()) {
                 "add" -> {
                     val name = ctx.getStringOrDefault("name", "")
                     val message = ctx.getStringOrDefault("message", "")
@@ -64,15 +69,13 @@ class CustomTags : Plugin() {
                         return@registerCommand CommandsAPI.CommandResult("Tag name cannot contain spaces!", null, false)
                     }
                     
-                    // Save the tag
                     val tags = getTags().toMutableMap()
                     tags[name] = message
                     saveTags(tags)
                     
-                    // Register the command
                     registerTagCommand(name, message)
                     
-                    CommandsAPI.CommandResult("Tag `$name` created successfully!", null, false)
+                    CommandsAPI.CommandResult("Tag `$name` created! Use /$name to send it.", null, false)
                 }
                 "remove" -> {
                     val name = ctx.getStringOrDefault("name", "")
@@ -89,20 +92,19 @@ class CustomTags : Plugin() {
                     tags.remove(name)
                     saveTags(tags)
                     
-                    // Unregister the command
                     commands.unregisterCommand(name)
                     
-                    CommandsAPI.CommandResult("Tag `$name` removed successfully!", null, false)
+                    CommandsAPI.CommandResult("Tag `$name` removed!", null, false)
                 }
                 "list" -> {
                     val tags = getTags()
                     
                     if (tags.isEmpty()) {
-                        return@registerCommand CommandsAPI.CommandResult("No custom tags created yet!", null, false)
+                        return@registerCommand CommandsAPI.CommandResult("No custom tags created yet! Use /tag add <name> <message>", null, false)
                     }
                     
-                    val tagList = tags.keys.joinToString(", ") { "`$it`" }
-                    CommandsAPI.CommandResult("**Custom Tags:** $tagList", null, false)
+                    val tagList = tags.keys.joinToString(", ") { "`/$it`" }
+                    CommandsAPI.CommandResult("**Your Tags:**\n$tagList", null, false)
                 }
                 else -> CommandsAPI.CommandResult("Invalid action! Use: add, remove, or list", null, false)
             }
@@ -110,11 +112,13 @@ class CustomTags : Plugin() {
     }
 
     private fun registerTagCommand(name: String, message: String) {
-        commands.registerCommand(
-            name,
-            "Custom tag: ${message.take(50)}${if (message.length > 50) "..." else ""}",
-            emptyList()
-        ) {
+        val description = if (message.length > 50) {
+            message.substring(0, 50) + "..."
+        } else {
+            message
+        }
+        
+        commands.registerCommand(name, description) { ctx: CommandContext ->
             CommandsAPI.CommandResult(message, null, true)
         }
     }
