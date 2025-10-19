@@ -7,6 +7,7 @@ import com.aliucord.entities.CommandContext
 import com.aliucord.api.CommandsAPI
 import com.aliucord.Utils
 import com.discord.api.commands.ApplicationCommandType
+import com.google.gson.reflect.TypeToken
 
 @AliucordPlugin
 class CustomTags : Plugin() {
@@ -27,7 +28,7 @@ class CustomTags : Plugin() {
                 Utils.createCommandOption(
                     ApplicationCommandType.STRING,
                     "action",
-                    "Action: add, remove, or list",
+                    "Action: add, remove, list, or edit",
                     null,
                     true
                 ),
@@ -65,12 +66,41 @@ class CustomTags : Plugin() {
                     }
                     
                     val tags = getTags().toMutableMap()
+                    if (tags.containsKey(name)) {
+                        return@registerCommand CommandsAPI.CommandResult("Tag `$name` already exists! Use /tag edit to modify it.", null, false)
+                    }
+                    
                     tags[name] = message
                     saveTags(tags)
                     
                     registerTagCommand(name, message)
                     
                     CommandsAPI.CommandResult("Tag `$name` created! Use /$name to send it.", null, false)
+                }
+                "edit" -> {
+                    val name = ctx.getStringOrDefault("name", "")
+                    val message = ctx.getStringOrDefault("message", "")
+                    
+                    if (name.isEmpty()) {
+                        return@registerCommand CommandsAPI.CommandResult("Please provide a tag name to edit!", null, false)
+                    }
+                    if (message.isEmpty()) {
+                        return@registerCommand CommandsAPI.CommandResult("Please provide a new message!", null, false)
+                    }
+                    
+                    val tags = getTags().toMutableMap()
+                    if (!tags.containsKey(name)) {
+                        return@registerCommand CommandsAPI.CommandResult("Tag `$name` does not exist!", null, false)
+                    }
+                    
+                    tags[name] = message
+                    saveTags(tags)
+                    
+                    // Re-register the command with updated message
+                    commands.unregisterCommand(name)
+                    registerTagCommand(name, message)
+                    
+                    CommandsAPI.CommandResult("Tag `$name` updated!", null, false)
                 }
                 "remove" -> {
                     val name = ctx.getStringOrDefault("name", "")
@@ -101,7 +131,7 @@ class CustomTags : Plugin() {
                     val tagList = tags.keys.joinToString(", ") { "`/$it`" }
                     CommandsAPI.CommandResult("**Your Tags:**\n$tagList", null, false)
                 }
-                else -> CommandsAPI.CommandResult("Invalid action! Use: add, remove, or list", null, false)
+                else -> CommandsAPI.CommandResult("Invalid action! Use: add, edit, remove, or list", null, false)
             }
         }
     }
@@ -120,14 +150,20 @@ class CustomTags : Plugin() {
 
     private fun getTags(): Map<String, String> {
         return try {
-            settings.getObject(tagsKey, emptyMap<String, String>())
+            val type = object : TypeToken<HashMap<String, String>>() {}.type
+            settings.getObject(tagsKey, HashMap<String, String>(), type) ?: emptyMap()
         } catch (e: Exception) {
+            logger.error("Failed to load tags", e)
             emptyMap()
         }
     }
 
     private fun saveTags(tags: Map<String, String>) {
-        settings.setObject(tagsKey, tags)
+        try {
+            settings.setObject(tagsKey, tags)
+        } catch (e: Exception) {
+            logger.error("Failed to save tags", e)
+        }
     }
 
     override fun stop(context: Context) {
