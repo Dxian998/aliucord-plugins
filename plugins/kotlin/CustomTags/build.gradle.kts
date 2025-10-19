@@ -1,9 +1,9 @@
-version = "1.0.0"
+version = "1.0.1"
 description = "Custom Tags"
 
 aliucord {
     changelog.set("""
-        adjust name
+        First release
     """.trimIndent())
 
     excludeFromUpdaterJson.set(false)
