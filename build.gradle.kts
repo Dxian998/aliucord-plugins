@@ -34,7 +34,7 @@ subprojects {
     apply(plugin = "kotlin-android")
 
     aliucord {
-        author("prs998", 844264784476110920)
+        author("prs998", 844264784476110920L)
         updateUrl.set("https://raw.githubusercontent.com/Dxian998/aliucord-plugins/builds/updater.json")
         buildUrl.set("https://raw.githubusercontent.com/Dxian998/aliucord-plugins/builds/%s.zip")
     }
